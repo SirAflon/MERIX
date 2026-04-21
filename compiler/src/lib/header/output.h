@@ -1,8 +1,10 @@
 #pragma once
 #include <iostream>
-
+#include <mutex>
+#include <sstream>
 
 namespace output{
+    inline std::mutex printMutex;
     enum Color {
         FG_RED = 31,
         FG_GREEN = 32,
@@ -36,14 +38,18 @@ namespace output{
         }
     };
     template<typename... Args>
-    void print(Args... args) {
-        (std::cout << ... << args);
+    void print(Args&&... args) {
+        std::ostringstream ss;
+        (ss << ... << args);
+        std::lock_guard<std::mutex> lock(output::printMutex);
+        std::cout << ss.str();
     }
     template<typename... Args>
-    void println(Args... args) {
-        (std::cout << ... << args) << '\n';
+    void println(Args&&... args) {
+        std::ostringstream ss;
+        (ss << ... << args);
+        ss << '\n';
+        std::lock_guard<std::mutex> lock(output::printMutex);
+        std::cout << ss.str();
     }
-    inline const UseColor reset(FG_DEFAULT);
-    inline const UseColor red(FG_RED);
-    inline const UseColor green(FG_GREEN);
 }
