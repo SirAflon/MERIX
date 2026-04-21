@@ -6,11 +6,12 @@
 
 # Compiler and flags
 CXX      := g++
-CXXFLAGS := -std=c++20 -Wall -Wextra -pedantic -I src/header
+CXXFLAGS := -std=c++23 -Wall -Wextra -pedantic -I src/header
 LDFLAGS  :=
 
 # Directories
 SRC_DIR  := src/code
+LIB_DIR := src/lib/code
 BUILD_DIR := build
 TARGET   := merix
 
@@ -30,6 +31,11 @@ $(TARGET): $(OBJECTS)
 
 # Compile .cpp to .o for files under src/code/
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Compile .cpp to .o for files under src/lib/code
+$(BUILD_DIR)/%.o: $(LIB_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
