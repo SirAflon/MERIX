@@ -16,10 +16,9 @@ BUILD_DIR := build
 TARGET   := merix
 
 # Collect .cpp files under src/code AND src/main.cpp
-SOURCES  := $(shell find $(SRC_DIR) -name '*.cpp') src/main.cpp
+SOURCES := $(shell find $(SRC_DIR) $(LIB_DIR) -name '*.cpp') src/main.cpp
 # Convert to object files in build/ directory
-OBJECTS  := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(filter $(SRC_DIR)/%.cpp, $(SOURCES)))
-OBJECTS  += $(BUILD_DIR)/main.o
+OBJECTS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 
 # Default target
 all: $(TARGET)
@@ -29,19 +28,8 @@ $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
 	@echo "Build complete: $(TARGET)"
 
-# Compile .cpp to .o for files under src/code/
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Compile .cpp to .o for files under src/lib/code
-$(BUILD_DIR)/%.o: $(LIB_DIR)/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Compile src/main.cpp separately
-$(BUILD_DIR)/main.o: src/main.cpp
-	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Debug build

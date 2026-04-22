@@ -13,7 +13,7 @@ namespace lexer{
     void entry(const std::vector<char*> inputfiles,Settings flag){
         if(flag.compilerDebugMode)
             output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"creating ",inputfiles.size()," Threads<LEXER>");
-        std::thread threads[inputfiles.size()];
+        std::vector<std::thread> threads(inputfiles.size());
         for(long unsigned int i=0;i<inputfiles.size();i++){
             threads[i] = std::thread(lexer::threadEntry,inputfiles[i],i,flag);
             if(flag.compilerDebugMode)

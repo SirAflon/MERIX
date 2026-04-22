@@ -1,8 +1,6 @@
-#include "header/frontend/lexer.h"
-#include "lib/header/output.h"
-#include "lib/header/settings.h"
 #include "lib/header/inputParser.h"
 
+#include "header/frontend/lexer.h"
 
 
 int main(int argc, char* args[]){
