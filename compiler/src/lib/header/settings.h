@@ -1,5 +1,7 @@
 #pragma once
 
 struct Settings{
-    bool compilerDebugMode = false;
+    bool showStatus = false;
+    int maxThreads =1;
+    int lexerThreads =1;
 };

@@ -3,9 +3,10 @@
 #include "output.h"
 #include <vector>
 #include <cstring>
+#include <unordered_map>
 
 struct parsedCommand{
-    char* outputFile;
+    char* outputFile = nullptr;
     std::vector<char*> inputFiles;
     Settings flag;
 };
