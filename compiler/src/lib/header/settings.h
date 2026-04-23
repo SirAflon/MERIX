@@ -1,7 +1,9 @@
 #pragma once
+#include <thread>
 
 struct Settings{
     bool showStatus = false;
-    int maxThreads =1;
-    int lexerThreads =1;
+    bool ignorWarning = false;
+
+    unsigned int maxThreads = std::max(1u, std::thread::hardware_concurrency() - 1);
 };

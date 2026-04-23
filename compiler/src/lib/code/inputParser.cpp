@@ -9,9 +9,19 @@ bool endsWith(const char* str, const char* suffix) {
         return false;
     return std::strcmp(str + str_len - suff_len, suffix) == 0;
 }
+bool toInt(const char* s,unsigned int& out){
+    std::string_view sv(s);
+    auto [ptr,ec] = std::from_chars(sv.data(),sv.data() + sv.size(),out);
+    return ec == std::errc() && ptr == sv.data() + sv.size();
+}
+bool toFloat(const char* s,float& out){
+    std::string_view sv(s);
+    auto [ptr,ec] = std::from_chars(sv.data(),sv.data() + sv.size(),out);
+    return ec == std::errc() && ptr == sv.data() + sv.size();    
+}
+
 parsedCommand parseInput(int argc,char* args[]){
     parsedCommand cmd;
-    std::vector<char*> flags;
     bool projFileUsed = false;
     char* projFilePath;
     int curr = 1;
@@ -33,14 +43,30 @@ parsedCommand parseInput(int argc,char* args[]){
         }
         if(strcmp(arg,"-o")==0||strcmp(arg,"-output")==0){
             if(curr + 1 >= argc){
-                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the 'output'(shortened o) needs to come a fileName after.");
+                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-output'(shortened '-o') needs to come a fileName after.");
                 exit(1);
             }
             if(args[curr+1][0] == '-'){
-                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the 'output'(shortened o) needs to come a fileName after.");
+                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-output'(shortened '-o') needs to come a fileName after.");
                 exit(1); 
             }
             cmd.outputFile = args[++curr];
+            continue;
+        }
+         if(strcmp(arg,"-mT")==0||strcmp(arg,"-maxThreads")==0){
+            if(curr + 1 >= argc){
+                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-maxThreads'(shortened '-mT' needs to come a integer.");
+                exit(1);
+            }
+            if(args[curr+1][0] == '-'){
+                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-maxThreads'(shortened '-mT') needs to come a integer.");
+                exit(1); 
+            }
+            if(toInt(args[curr+1],cmd.flag.maxThreads)){
+                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-maxThreads'(shortened '-mT') needs to come a integer.");
+                exit(1); 
+            }
+            curr += 2;
             continue;
         }
         if(strcmp(arg,"-showStatus")==0||strcmp(arg,"-sS")==0){
@@ -48,7 +74,13 @@ parsedCommand parseInput(int argc,char* args[]){
             curr++;
             continue;
         }
-        output::println(output::UseColor(output::FG_YELLOW),"WARNING<MAIN>: ",output::UseColor(output::FG_DEFAULT),"the flag '",args[curr],"' is unknown.");
+        if(strcmp(arg,"-ignorWarnings")==0||strcmp(arg,"-iW")==0){
+            cmd.flag.ignorWarning=true;
+            curr++;
+            continue;
+        }
+        if(!cmd.flag.ignorWarning)
+            output::println(output::UseColor(output::FG_YELLOW),"WARNING<MAIN>: ",output::UseColor(output::FG_DEFAULT),"the flag '",args[curr],"' is unknown.");
         curr++;
     }
     if(cmd.outputFile == nullptr){

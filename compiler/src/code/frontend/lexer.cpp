@@ -21,18 +21,26 @@ namespace lexer{
         if(flag.showStatus)
             output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"creating ",inputfiles.size()," Threads<LEXER>");
         std::vector<std::thread> threads(inputfiles.size());
-        for(long unsigned int i=0;i<inputfiles.size();i++){
-            threads[i] = std::thread(lexer::threadEntry,inputfiles[i],i,flag);
-            if(flag.showStatus)
-                output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"the new Thread<LEXER>[",i,"] was created.");
+        unsigned int length = (flag.maxThreads <= 0)?static_cast<unsigned int>(inputfiles.size()):(static_cast<unsigned int>(inputfiles.size())>flag.maxThreads)?flag.maxThreads:static_cast<unsigned int>(inputfiles.size());
+        unsigned int threadCount=0;
+        bool run = true;
+        while(run){
+            for(unsigned int i=0;((i<length)&&run);i++){
+                threads[i] = std::thread(lexer::threadEntry,inputfiles[i],i,flag);
+                threadCount++;
+                if(flag.showStatus)
+                    output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"the new Thread<LEXER>[",i,"] was created.");
+            }
+            if(flag.showStatus){
+                output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"all Threads<LEXER> are created.");
+                output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"Waiting for Threads<LEXER> to finish.");
+            }
+            for (auto& t : threads)
+                if(t.joinable())
+                    t.join();
+            if(inputfiles.size() == threadCount)
+                run = false;
         }
-        if(flag.showStatus){
-            output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"all Threads<LEXER> are created.");
-            output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"Waiting for Threads<LEXER> to finish.");
-        }
-        for (auto& t : threads)
-            if(t.joinable())
-                t.join();
         if(flag.showStatus)
             output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"all Threads<LEXER> are finished.");
     }
