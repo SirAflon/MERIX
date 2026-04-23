@@ -31,7 +31,7 @@ parsedCommand parseInput(int argc,char* args[]){
         curr++;
     }
     while(curr < argc){
-        if(!projFileUsed&&endsWith(args[curr],".mrx")){
+        if(endsWith(args[curr],".mrx")){
             cmd.inputFiles.push_back(args[curr]);
             curr++;
             continue;
@@ -42,29 +42,17 @@ parsedCommand parseInput(int argc,char* args[]){
             continue;
         }
         if(strcmp(arg,"-o")==0||strcmp(arg,"-output")==0){
-            if(curr + 1 >= argc){
+            if(curr + 1 >= argc || args[curr+1][0] == '-'){
                 output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-output'(shortened '-o') needs to come a fileName after.");
                 exit(1);
-            }
-            if(args[curr+1][0] == '-'){
-                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-output'(shortened '-o') needs to come a fileName after.");
-                exit(1); 
             }
             cmd.outputFile = args[++curr];
             continue;
         }
-         if(strcmp(arg,"-mT")==0||strcmp(arg,"-maxThreads")==0){
-            if(curr + 1 >= argc){
-                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-maxThreads'(shortened '-mT' needs to come a integer.");
+        if (strcmp(arg, "-mT") == 0 || strcmp(arg, "-maxThreads") == 0) {
+            if (curr + 1 >= argc || !toInt(args[curr+1], cmd.flag.maxThreads)) {
+                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after '-maxThreads' (or '-mT') needs an unsigned integer.");
                 exit(1);
-            }
-            if(args[curr+1][0] == '-'){
-                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-maxThreads'(shortened '-mT') needs to come a integer.");
-                exit(1); 
-            }
-            if(toInt(args[curr+1],cmd.flag.maxThreads)){
-                output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"after the '-maxThreads'(shortened '-mT') needs to come a integer.");
-                exit(1); 
             }
             curr += 2;
             continue;
