@@ -73,7 +73,6 @@ typedef enum {
         TOKEN_KEYWORD_PUBLIC,
         TOKEN_KEYWORD_PRIVATE,
         TOKEN_KEYWORD_INCLUDE,
-        TOKEN_KEYWORD_AS,
         TOKEN_KEYWORD_TYP,
         TOKEN_KEYWORD_VAL,
         TOKEN_KEYWORD_OVERRIDE,
@@ -163,7 +162,6 @@ static const std::unordered_map<std::string, TokenKind> tokenMapKeywords{
     {"public", TOKEN_KEYWORD_PUBLIC},
     {"private", TOKEN_KEYWORD_PRIVATE},
     {"include", TOKEN_KEYWORD_INCLUDE},
-    {"as", TOKEN_KEYWORD_AS},
     {"typ", TOKEN_KEYWORD_TYP},
     {"val", TOKEN_KEYWORD_VAL},
     {"override", TOKEN_KEYWORD_OVERRIDE},
@@ -185,4 +183,10 @@ static const std::unordered_map<std::string, TokenKind> tokenMapKeywords{
     {"break", TOKEN_KEYWORD_BREAK},
     {"return", TOKEN_KEYWORD_RETURN},
     {"continue", TOKEN_KEYWORD_CONTINUE},
+};
+static const std::unordered_set<char> tokenBreakChar{
+    '(',')','[',']','{','}','<','>',
+    ';',':','!','&','=','|',',','.',
+    '+','-','*','/','%','^','~',
+    '"','\''
 };

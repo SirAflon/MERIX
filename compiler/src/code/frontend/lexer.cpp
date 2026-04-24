@@ -21,7 +21,9 @@ namespace lexer{
         unsigned int line =1,col = 1;
         size_t pos=0;
         auto tokenMapEnd = tokenMapSymbols.end();
+        auto tokenTemp = tokenMapEnd;
         bool valid=false;
+        std::string strTmp;
         while(pos<size){
             char ch = source[pos];
             if (ch == ' ' || ch == '\t' || ch == '\r') {
@@ -63,17 +65,36 @@ namespace lexer{
                 if (pos + len > size) 
                     continue;
                 std::string cand = source.substr(pos, len);
-                auto it = tokenMapSymbols.find(cand);
-                if (it != tokenMapEnd) {
+                tokenTemp = tokenMapSymbols.find(cand);
+                if (tokenTemp != tokenMapEnd) {
                     pos += len;
                     col += len;
-                    tokens.push_back(Token{it->second, cand, line, col - len});
+                    tokens.push_back(Token{tokenTemp->second, cand, line, col - len});
                     valid = true;
                     break;
                 }
             }
             if(valid){
                 valid=false;
+                continue;
+            }
+            strTmp = ch;
+            while(!(tokenBreakChar.contains(strTmp.back()))&&pos<size){
+                pos++;
+                col++;
+                strTmp += source[pos];
+                valid=true;
+            }
+            if(valid){
+                pos--;
+                col--;
+                valid=false;
+                tokenTemp = tokenMapKeywords.find(strTmp);
+                if(tokenTemp != tokenMapEnd){
+                    tokens.push_back(Token{tokenTemp->second,strTmp,line,col});
+                }else{
+                    tokens.push_back(Token{TokenKind::TOKEN_IDENTIFIER,strTmp,line,col});
+                }
                 continue;
             }
         }
