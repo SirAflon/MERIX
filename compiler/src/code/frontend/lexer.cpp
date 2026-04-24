@@ -16,10 +16,13 @@ namespace lexer{
             return;
         }
         std::string source((std::istreambuf_iterator<char>(file)),std::istreambuf_iterator<char>());
-        std::vector<Token> tokens((source.size()*3));
+        size_t size = source.size();
+        std::vector<Token> tokens((size*3));
         unsigned int line =1,col = 1;
         size_t pos=0;
-        while(pos<source.size()){
+        auto tokenMapEnd = tokenMapSymbols.end();
+        bool valid=false;
+        while(pos<size){
             char ch = source[pos];
             if (ch == ' ' || ch == '\t' || ch == '\r') {
                 col++;
@@ -32,10 +35,10 @@ namespace lexer{
                 pos++;
                 continue;
             }
-            if(ch=='/'&& pos+1 < source.size() &&source[pos+1]=='/'){
+            if(ch=='/'&& pos+1 < size &&source[pos+1]=='/'){
                 pos += 2;
                 col += 2;
-                while(pos<source.size() && source[pos]!='\n'){
+                while(pos<size && source[pos]!='\n'){
                     if(source[pos]=='\n')
                         break;
                     col++;                        
@@ -43,10 +46,10 @@ namespace lexer{
                 }
                 continue;
             }
-            if(ch=='/'&& pos+1 < source.size() &&source[pos+1]=='*'){
+            if(ch=='/'&& pos+1 < size &&source[pos+1]=='*'){
                 pos += 2;
                 col += 2;
-                while(pos +1 <source.size() && !(source[pos]=='*'&&source[pos+1]=='/')){
+                while(pos +1 <size && !(source[pos]=='*'&&source[pos+1]=='/')){
                     if(source[pos]=='\n')
                         line++;
                     col++;
@@ -56,292 +59,21 @@ namespace lexer{
                 col += 2;
                 continue;
             }
-            if(ch=='<'){
-                if(source[pos+1]=='<'){
-                    if(source[pos+2]=='='){
-                        tokens.push_back(Token{TokenKind::TOKEN_SHIFT_LEFT_EQ,std::string("<<="),line,col});
-                        pos +=3;
-                        col +=3;
-                        continue;
-                    }
-                    tokens.push_back(Token{TokenKind::TOKEN_SHIFT_LEFT,std::string("<<"),line,col});
-                    pos++;
-                    col++;
+            for (int len = MAX_TOKEN_LEN; len >= 1; --len) {
+                if (pos + len > size) 
                     continue;
+                std::string cand = source.substr(pos, len);
+                auto it = tokenMapSymbols.find(cand);
+                if (it != tokenMapEnd) {
+                    pos += len;
+                    col += len;
+                    tokens.push_back(Token{it->second, cand, line, col - len});
+                    valid = true;
+                    break;
                 }
-                if(source[pos+1]=='-'){
-                    tokens.push_back(Token{TokenKind::TOKEN_ARROW,std::string("<-"),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_LT_EQ,std::string("<="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_LT,std::string("<"),line,col});
-                pos ++;
-                col ++;
-                continue;
             }
-            if(ch=='>'){
-                if(source[pos+1]=='>'){
-                    if(source[pos+2]=='='){
-                        tokens.push_back(Token{TokenKind::TOKEN_SHIFT_RIGHT_EQ,std::string(">>="),line,col});
-                        pos +=3;
-                        col +=3;
-                        continue;
-                    }
-                    tokens.push_back(Token{TokenKind::TOKEN_SHIFT_RIGHT,std::string(">>"),line,col});
-                    pos++;
-                    col++;
-                    continue;
-                }
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_GT_EQ,std::string(">="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_GT,std::string(">"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='-'){
-                if(source[pos+1]=='>'){
-                    tokens.push_back(Token{TokenKind::TOKEN_ARROW,std::string("->"),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_MINUS_EQ,std::string("-="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                if(source[pos+1]=='-'){
-                    tokens.push_back(Token{TokenKind::TOKEN_DEC,std::string("--"),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_MINUS,std::string("-"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='+'){
-                if(source[pos+1]=='+'){
-                    tokens.push_back(Token{TokenKind::TOKEN_INC,std::string("++"),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_PLUS_EQ,std::string("+="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_PLUS,std::string("+"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='|'){
-                if(source[pos+1]=='|'){
-                    tokens.push_back(Token{TokenKind::TOKEN_PIPE_PIPE,std::string("||"),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_PIPE_EQ,std::string("|="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_PIPE,std::string("|"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='&'){
-                if(source[pos+1]=='&'){
-                    tokens.push_back(Token{TokenKind::TOKEN_AND_AND,std::string("&&"),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_AMP_EQ,std::string("&="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_AMP,std::string("&"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='!'){
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_NOT_EQ,std::string("!="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_EXCLAM,std::string("!"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='='){
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_EQ_EQ,std::string("=="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_ASSIGN,std::string("="),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='^'){
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_CARET_EQ,std::string("^="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_CARET,std::string("^"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='%'){
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_PERCENT_EQ,std::string("%="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_PERCENT,std::string("%"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='/'){
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_SLASH_EQ,std::string("/="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_SLASH,std::string("/"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='*'){
-                if(source[pos+1]=='='){
-                    tokens.push_back(Token{TokenKind::TOKEN_STAR_EQ,std::string("*="),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_STAR,std::string("*"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch==':'){
-                if(source[pos+1]==':'){
-                    tokens.push_back(Token{TokenKind::TOKEN_SCOPE,std::string("::"),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_COLON,std::string(":"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='.'){
-                if(source[pos+1]=='.'){
-                    tokens.push_back(Token{TokenKind::TOKEN_DOTDOT,std::string(".."),line,col});
-                    pos +=2;
-                    col +=2;
-                    continue;
-                }
-                tokens.push_back(Token{TokenKind::TOKEN_DOT,std::string("."),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='~'){
-                tokens.push_back(Token{TokenKind::TOKEN_TILDE,std::string("~"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch==';'){
-                tokens.push_back(Token{TokenKind::TOKEN_SEMICOLON,std::string(";"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch==','){
-                tokens.push_back(Token{TokenKind::TOKEN_COMMA,std::string(","),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='['){
-                tokens.push_back(Token{TokenKind::TOKEN_LBRACKET,std::string("["),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch==']'){
-                tokens.push_back(Token{TokenKind::TOKEN_RBRACKET,std::string("]"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='['){
-                tokens.push_back(Token{TokenKind::TOKEN_LBRACKET,std::string("["),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='{'){
-                tokens.push_back(Token{TokenKind::TOKEN_LBRACE,std::string("{"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='}'){
-                tokens.push_back(Token{TokenKind::TOKEN_RBRACE,std::string("}"),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch=='('){
-                tokens.push_back(Token{TokenKind::TOKEN_LPAREN,std::string("("),line,col});
-                pos ++;
-                col ++;
-                continue;
-            }
-            if(ch==')'){
-                tokens.push_back(Token{TokenKind::TOKEN_RPAREN,std::string(")"),line,col});
-                pos ++;
-                col ++;
+            if(valid){
+                valid=false;
                 continue;
             }
         }

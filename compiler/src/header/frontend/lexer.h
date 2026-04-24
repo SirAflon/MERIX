@@ -2,7 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <thread>
-#include <unordered_map>
+#include <optional>
 #include <cstddef>
 #include "../../lib/header/output.h"
 #include "../../lib/header/settings.h"
