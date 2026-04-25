@@ -19,6 +19,7 @@ typedef enum {
         TOKEN_DOT,             // .
         TOKEN_DOTDOT,          // ..
         TOKEN_ASSIGN,          // =
+        TOKEN_QUESTIONMARK,
 
         // === Two‑character operators ===
         TOKEN_PLUS_EQ,         // +=
@@ -58,11 +59,15 @@ typedef enum {
 
         // === Literals ===
         TOKEN_INTEGER,         // 123, 0
+        TOKEN_FLOAT,
         TOKEN_CHAR,            // 'a', '\n'
         TOKEN_STRING,          // "hello"
+        TOKEN_ERROR,
+        TOKEN_UNKNOWN,
 
         // === Identifiers & keywords (keywords are a subset of identifiers) ===
         TOKEN_IDENTIFIER,
+        TOKEN_COMMENT,
 
         // Keywords – listed explicitly for easy checking
         TOKEN_KEYWORD_MEM,
@@ -94,7 +99,9 @@ typedef enum {
         TOKEN_KEYWORD_BREAK,
         TOKEN_KEYWORD_RETURN,
         TOKEN_KEYWORD_CONTINUE,
-} TokenKind;
+        TOKEN_KEYWORD_ERR,
+        TOKEN_KEYWORD_META,
+}TokenKind;
 
 static const int MAX_TOKEN_LEN = 3;
 static const std::unordered_map<std::string, TokenKind> tokenMapSymbols = {
@@ -135,6 +142,7 @@ static const std::unordered_map<std::string, TokenKind> tokenMapSymbols = {
     {"++", TOKEN_INC},
     {"--", TOKEN_DEC},
     {"->", TOKEN_ARROW},
+    {"//", TOKEN_COMMENT},
 
     // Remaining single‑character operators
     {"+", TOKEN_PLUS},
@@ -147,6 +155,7 @@ static const std::unordered_map<std::string, TokenKind> tokenMapSymbols = {
     {"^", TOKEN_CARET},
     {"~", TOKEN_TILDE},
     {"!", TOKEN_EXCLAM},
+    {"?", TOKEN_QUESTIONMARK},
 
     // Multi‑character punctuation
     {"::", TOKEN_SCOPE},
@@ -183,6 +192,8 @@ static const std::unordered_map<std::string, TokenKind> tokenMapKeywords{
     {"break", TOKEN_KEYWORD_BREAK},
     {"return", TOKEN_KEYWORD_RETURN},
     {"continue", TOKEN_KEYWORD_CONTINUE},
+    {"err",TOKEN_KEYWORD_ERR},
+    {"meta",TOKEN_KEYWORD_META},
 };
 static const std::unordered_set<char> tokenBreakChar{
     '(',')','[',']','{','}','<','>',

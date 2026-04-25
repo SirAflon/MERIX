@@ -4,6 +4,7 @@
 #include <thread>
 #include <optional>
 #include <cstddef>
+#include <atomic>
 #include "../../lib/header/output.h"
 #include "../../lib/header/settings.h"
 #include "../../lib/header/lexerTokens.h"
