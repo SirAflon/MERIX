@@ -25,7 +25,7 @@ parsedCommand parseInput(int argc,char* args[]){
     bool projFileUsed = false;
     char* projFilePath;
     int curr = 1;
-    if(endsWith(args[curr],".merp")){
+    if(endsWith(args[curr],".mrxproj")){
         projFileUsed = true;
         projFilePath = args[curr];
         curr++;
@@ -76,7 +76,7 @@ parsedCommand parseInput(int argc,char* args[]){
         exit(1);
     }
     if(cmd.inputFiles.size()==0){
-        output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"please provide a valid inputfile filepath. The ending must be a '.mrx' or '.merp'.");
+        output::println(output::UseColor(output::FG_RED),"ERROR<MAIN>: ",output::UseColor(output::FG_DEFAULT),"please provide a valid inputfile filepath. The ending must be a '.mrx' or '.mrxproj'.");
         exit(1);
     }
     return cmd;

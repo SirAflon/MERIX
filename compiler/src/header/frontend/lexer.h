@@ -10,5 +10,15 @@
 #include "../../lib/header/lexerTokens.h"
 
 namespace lexer{
-    void entry(std::vector<char*>,Settings);
+    struct Token{
+        TokenKind kind;
+        std::string lexeme;
+        unsigned int line;
+        unsigned int col;
+    };
+    struct TokenFile{
+        std::vector<Token> tokens;
+        char* filePath;
+    };
+    void entry(std::vector<char*>,Settings,std::vector<TokenFile>&);
 }
