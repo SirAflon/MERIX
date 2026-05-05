@@ -2,74 +2,69 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
+#include <string_view>
 
 typedef enum {
-        // === Single‑character tokens (brackets, punctuation) ===
-        TOKEN_LPAREN,          // (
-        TOKEN_RPAREN,          // )
-        TOKEN_LBRACE,          // {
-        TOKEN_RBRACE,          // }
-        TOKEN_LBRACKET,        // [
-        TOKEN_RBRACKET,        // ]
-        TOKEN_LT,              // <
-        TOKEN_GT,              // >
-        TOKEN_COMMA,           // ,
-        TOKEN_SEMICOLON,       // ;
-        TOKEN_COLON,           // :
-        TOKEN_DOT,             // .
-        TOKEN_DOTDOT,          // ..
-        TOKEN_ASSIGN,          // =
+        TOKEN_LPAREN,
+        TOKEN_RPAREN,
+        TOKEN_LBRACE,
+        TOKEN_RBRACE,
+        TOKEN_LBRACKET,
+        TOKEN_RBRACKET,
+        TOKEN_LT,
+        TOKEN_GT,
+        TOKEN_COMMA,
+        TOKEN_SEMICOLON,
+        TOKEN_COLON,
+        TOKEN_DOT,
+        TOKEN_DOTDOT,
+        TOKEN_ASSIGN,
         TOKEN_QUESTIONMARK,
 
-        // === Two‑character operators ===
-        TOKEN_PLUS_EQ,         // +=
-        TOKEN_MINUS_EQ,        // -=
-        TOKEN_STAR_EQ,         // *=
-        TOKEN_SLASH_EQ,        // /=
-        TOKEN_PERCENT_EQ,      // %=
-        TOKEN_AMP_EQ,          // &=
-        TOKEN_PIPE_EQ,         // |=
-        TOKEN_CARET_EQ,        // ^=
-        TOKEN_SHIFT_LEFT_EQ,   // <<=
-        TOKEN_SHIFT_RIGHT_EQ,  // >>=
-        TOKEN_EQ_EQ,           // ==
-        TOKEN_NOT_EQ,          // !=
-        TOKEN_LT_EQ,           // <=
-        TOKEN_GT_EQ,           // >=
-        TOKEN_AND_AND,         // &&
-        TOKEN_PIPE_PIPE,       // ||
-        TOKEN_SHIFT_LEFT,      // <<
-        TOKEN_SHIFT_RIGHT,     // >>
-        TOKEN_INC,             // ++
-        TOKEN_DEC,             // --
-        TOKEN_ARROW,           // ->
+        TOKEN_PLUS_EQ,
+        TOKEN_MINUS_EQ,
+        TOKEN_STAR_EQ,
+        TOKEN_SLASH_EQ,
+        TOKEN_PERCENT_EQ,
+        TOKEN_AMP_EQ,
+        TOKEN_PIPE_EQ,
+        TOKEN_CARET_EQ,
+        TOKEN_SHIFT_LEFT_EQ,
+        TOKEN_SHIFT_RIGHT_EQ,
+        TOKEN_EQ_EQ,
+        TOKEN_NOT_EQ,
+        TOKEN_LT_EQ,
+        TOKEN_GT_EQ,
+        TOKEN_AND_AND,
+        TOKEN_PIPE_PIPE,
+        TOKEN_SHIFT_LEFT,
+        TOKEN_SHIFT_RIGHT,
+        TOKEN_INC,
+        TOKEN_DEC,
+        TOKEN_ARROW,
 
-        // === Single‑character operators (not covered above) ===
-        TOKEN_PLUS,            // +
-        TOKEN_MINUS,           // -
-        TOKEN_STAR,            // *
-        TOKEN_SLASH,           // /
-        TOKEN_PERCENT,         // %
-        TOKEN_AMP,             // &
-        TOKEN_PIPE,            // |
-        TOKEN_CARET,           // ^
-        TOKEN_TILDE,           // ~
-        TOKEN_EXCLAM,          // !
-        TOKEN_SCOPE,           // ::
+        TOKEN_PLUS,
+        TOKEN_MINUS,
+        TOKEN_STAR,
+        TOKEN_SLASH,
+        TOKEN_PERCENT,
+        TOKEN_AMP,
+        TOKEN_PIPE,
+        TOKEN_CARET,
+        TOKEN_TILDE,
+        TOKEN_EXCLAM,
+        TOKEN_SCOPE,
 
-        // === Literals ===
-        TOKEN_INTEGER,         // 123, 0
+        TOKEN_INTEGER,
         TOKEN_FLOAT,
-        TOKEN_CHAR,            // 'a', '\n'
-        TOKEN_STRING,          // "hello"
+        TOKEN_CHAR,
+        TOKEN_STRING,
         TOKEN_ERROR,
         TOKEN_UNKNOWN,
 
-        // === Identifiers & keywords (keywords are a subset of identifiers) ===
         TOKEN_IDENTIFIER,
         TOKEN_COMMENT,
 
-        // Keywords – listed explicitly for easy checking
         TOKEN_KEYWORD_MEM,
         TOKEN_KEYWORD_STRUCT,
         TOKEN_KEYWORD_SIGNED,
@@ -104,8 +99,8 @@ typedef enum {
 }TokenKind;
 
 static const int MAX_TOKEN_LEN = 3;
-static const std::unordered_map<std::string, TokenKind> tokenMapSymbols = {
-    // Single‑character tokens (brackets, punctuation)
+
+static const std::unordered_map<std::string_view, TokenKind> tokenMapSymbols = {
     {"(", TOKEN_LPAREN},
     {")", TOKEN_RPAREN},
     {"{", TOKEN_LBRACE},
@@ -119,8 +114,6 @@ static const std::unordered_map<std::string, TokenKind> tokenMapSymbols = {
     {":", TOKEN_COLON},
     {".", TOKEN_DOT},
     {"=", TOKEN_ASSIGN},
-
-    // Two‑character and three‑character operators
     {"+=", TOKEN_PLUS_EQ},
     {"-=", TOKEN_MINUS_EQ},
     {"*=", TOKEN_STAR_EQ},
@@ -143,8 +136,6 @@ static const std::unordered_map<std::string, TokenKind> tokenMapSymbols = {
     {"--", TOKEN_DEC},
     {"->", TOKEN_ARROW},
     {"//", TOKEN_COMMENT},
-
-    // Remaining single‑character operators
     {"+", TOKEN_PLUS},
     {"-", TOKEN_MINUS},
     {"*", TOKEN_STAR},
@@ -156,13 +147,11 @@ static const std::unordered_map<std::string, TokenKind> tokenMapSymbols = {
     {"~", TOKEN_TILDE},
     {"!", TOKEN_EXCLAM},
     {"?", TOKEN_QUESTIONMARK},
-
-    // Multi‑character punctuation
     {"::", TOKEN_SCOPE},
     {"..", TOKEN_DOTDOT},
 };
-static const std::unordered_map<std::string, TokenKind> tokenMapKeywords{
-    // Keywords (all fixed strings)
+
+static const std::unordered_map<std::string_view, TokenKind> tokenMapKeywords{
     {"mem", TOKEN_KEYWORD_MEM},
     {"struct", TOKEN_KEYWORD_STRUCT},
     {"signed", TOKEN_KEYWORD_SIGNED},
@@ -192,12 +181,13 @@ static const std::unordered_map<std::string, TokenKind> tokenMapKeywords{
     {"break", TOKEN_KEYWORD_BREAK},
     {"return", TOKEN_KEYWORD_RETURN},
     {"continue", TOKEN_KEYWORD_CONTINUE},
-    {"err",TOKEN_KEYWORD_ERR},
-    {"meta",TOKEN_KEYWORD_META},
+    {"err", TOKEN_KEYWORD_ERR},
+    {"meta", TOKEN_KEYWORD_META},
 };
+
 static const std::unordered_set<char> tokenBreakChar{
     '(',')','[',']','{','}','<','>',
     ';',':','!','&','=','|',',','.',
     '+','-','*','/','%','^','~',
-    '"','\''
+    '"','\'',' '
 };

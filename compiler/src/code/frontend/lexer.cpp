@@ -1,212 +1,242 @@
 #include "../../header/frontend/lexer.h"
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 namespace lexer{
-    void threadEntry(const char* filePath,unsigned int threadID,Settings flag,std::vector<Token>& tokens){
+    static ThreadPool pool(std::max(1u, std::thread::hardware_concurrency()));
+    std::atomic<unsigned int> freeID = 0;
+    unsigned int getID(){
+        return freeID.fetch_add(1);
+    }
+    void threadEntry(const char* filePath, unsigned int threadID, Settings flag, std::vector<Token>& tokens){
         if(flag.showStatus)
             output::println(output::UseColor(output::FG_GREEN),"REPORT<LEXER>[",threadID,"]: ",output::UseColor(output::FG_DEFAULT),"executing Thread.");
-        std::ifstream file(filePath,std::ios::binary);
-        if(!file){
+        int fd = open(filePath, O_RDONLY);
+        if(fd == -1){
             output::println(output::UseColor(output::FG_RED),"ERROR<LEXER>[",threadID,"]: ",output::UseColor(output::FG_DEFAULT),"the file '",filePath,"' could not be opened.");
-           return;
+            return;
         }
-        std::string source((std::istreambuf_iterator<char>(file)),std::istreambuf_iterator<char>());
-        size_t size = source.size();
-        tokens.reserve(size*0.25);
-        unsigned int line =1,col = 1;
-        size_t pos=0;
-        auto tokenMapSymbolEnd = tokenMapSymbols.end();
+        struct stat st;
+        fstat(fd, &st);
+        size_t size = static_cast<size_t>(st.st_size);
+        if(size == 0){
+            close(fd);
+            return;
+        }
+        const char* source = static_cast<const char*>(mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0));
+        close(fd);
+        if(source == MAP_FAILED){
+            output::println(output::UseColor(output::FG_RED),"ERROR<LEXER>[",threadID,"]: ",output::UseColor(output::FG_DEFAULT),"mmap failed for '",filePath,"'.");
+            return;
+        }
+        madvise((void*)source, size, MADV_SEQUENTIAL);
+        tokens.reserve(size >> 2);
+        unsigned int line = 1, col = 1;
+        size_t pos = 0;
         auto tokenMapKeywordEnd = tokenMapKeywords.end();
-        auto tokenTempSymbol = tokenMapSymbolEnd;
-        auto tokenTempKeyword = tokenMapKeywordEnd;
-        bool valid=false;
-        bool isFloat=false;
+        bool isFloat = false;
         std::string strTmp;
-        while(pos<size){
+        strTmp.reserve(64);
+        while(pos < size){
             char ch = source[pos];
-            switch(ch) {
-                case '\n':
-                    pos++;
-                    line++;
-                    col = 1;
-                    valid = true;
-                    break;
-                case ' ':
-                case '\t':
-                case '\r':
-                    col++;
-                    pos++;
-                    valid = true;
-                    break;
-            }
-            if(valid){
-                valid=false;
+            if(ch == '\n'){
+                pos++; line++; col = 1;
                 continue;
             }
-            if(ch=='/'&& pos+1 < size &&source[pos+1]=='*'){
-                pos += 2;
-                col += 2;
-                while(pos +1 <size && !(source[pos]=='*'&&source[pos+1]=='/')){
-                    if(source[pos]=='\n')
-                        line++;
-                    col++;
-                    pos++;
+            if(ch == ' ' || ch == '\t' || ch == '\r'){
+                pos++; col++;
+                continue;
+            }
+            if(ch == '/' && pos+1 < size && source[pos+1] == '*'){
+                pos += 2; col += 2;
+                while(pos+1 < size && !(source[pos] == '*' && source[pos+1] == '/')){
+                    if(source[pos] == '\n') line++;
+                    col++; pos++;
                 }
-                pos += 2;
-                col += 2;
+                pos += 2; col += 2;
                 continue;
             }
             if((ch >= '0' && ch <= '9') || (ch == '.' && pos+1 < size && source[pos+1] >= '0' && source[pos+1] <= '9')){
                 strTmp = ch;
-                isFloat=false;
-                valid=true;
+                isFloat = false;
+                bool valid = true;
                 while(pos+1 < size && (
                         (source[pos+1] >= '0' && source[pos+1] <= '9') ||
                         (source[pos+1] == '.' && pos+2 < size && source[pos+2] >= '0' && source[pos+2] <= '9')
                     )){
-                    pos++;
-                    col++;
+                    pos++; col++;
                     strTmp += source[pos];
-                    if(source[pos]=='.'){
-                        if(isFloat)
-                            valid=false;
-                        else
-                            isFloat=true;
+                    if(source[pos] == '.'){
+                        if(isFloat) valid = false;
+                        else isFloat = true;
                     }
                 }
-                pos++;
-                col++;
+                pos++; col++;
                 if(valid)
-                    tokens.push_back(Token{(isFloat)?TokenKind::TOKEN_FLOAT:TokenKind::TOKEN_INTEGER,strTmp,line,col});
+                    tokens.push_back(Token{(isFloat) ? TokenKind::TOKEN_FLOAT : TokenKind::TOKEN_INTEGER, strTmp, line, col});
                 else
-                    tokens.push_back(Token{TokenKind::TOKEN_ERROR,strTmp,line,col});
+                    tokens.push_back(Token{TokenKind::TOKEN_ERROR, strTmp, line, col});
                 continue;
             }
-            for (int len = MAX_TOKEN_LEN; len >= 1; --len) {
-                if (pos + len > size)
-                    continue;
-                std::string cand = source.substr(pos, len);
-                tokenTempSymbol = tokenMapSymbols.find(cand);
-                if (tokenTempSymbol == tokenMapSymbolEnd)
-                    continue;
-                if(tokenTempSymbol->second == TokenKind::TOKEN_COMMENT){
-                        pos += 2;
-                        col += 2;
-                        while(pos<size && source[pos]!='\n'){
-                            if(source[pos]=='\n')
-                                break;
-                            col++;
-                            pos++;
+            {
+                bool symbolFound = false;
+                switch(ch){
+                    case '+':
+                        if(pos+1 < size){
+                            if(source[pos+1] == '='){ tokens.push_back(Token{TOKEN_PLUS_EQ,"+=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                            if(source[pos+1] == '+'){ tokens.push_back(Token{TOKEN_INC,"++",line,col}); pos+=2; col+=2; symbolFound=true; break; }
                         }
-                        valid=true;
-                        break;
-                    }else{
-                        pos += len;
-                        col += len;
-                        tokens.push_back(Token{tokenTempSymbol->second, cand, line, col - len});
-                        valid = true;
-                        break;
-                    }
+                        tokens.push_back(Token{TOKEN_PLUS,"+",line,col}); pos++; col++; symbolFound=true; break;
+                    case '-':
+                        if(pos+1 < size){
+                            if(source[pos+1] == '='){ tokens.push_back(Token{TOKEN_MINUS_EQ,"-=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                            if(source[pos+1] == '-'){ tokens.push_back(Token{TOKEN_DEC,"--",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                            if(source[pos+1] == '>'){ tokens.push_back(Token{TOKEN_ARROW,"->",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        }
+                        tokens.push_back(Token{TOKEN_MINUS,"-",line,col}); pos++; col++; symbolFound=true; break;
+                    case '*':
+                        if(pos+1 < size && source[pos+1] == '='){ tokens.push_back(Token{TOKEN_STAR_EQ,"*=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        tokens.push_back(Token{TOKEN_STAR,"*",line,col}); pos++; col++; symbolFound=true; break;
+                    case '/':
+                        if(pos+1 < size){
+                            if(source[pos+1] == '/'){
+                                pos += 2; col += 2;
+                                while(pos < size && source[pos] != '\n'){ col++; pos++; }
+                                symbolFound=true; break;
+                            }
+                            if(source[pos+1] == '='){ tokens.push_back(Token{TOKEN_SLASH_EQ,"/=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        }
+                        tokens.push_back(Token{TOKEN_SLASH,"/",line,col}); pos++; col++; symbolFound=true; break;
+                    case '%':
+                        if(pos+1 < size && source[pos+1] == '='){ tokens.push_back(Token{TOKEN_PERCENT_EQ,"%=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        tokens.push_back(Token{TOKEN_PERCENT,"%",line,col}); pos++; col++; symbolFound=true; break;
+                    case '&':
+                        if(pos+1 < size){
+                            if(source[pos+1] == '&'){ tokens.push_back(Token{TOKEN_AND_AND,"&&",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                            if(source[pos+1] == '='){ tokens.push_back(Token{TOKEN_AMP_EQ,"&=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        }
+                        tokens.push_back(Token{TOKEN_AMP,"&",line,col}); pos++; col++; symbolFound=true; break;
+                    case '|':
+                        if(pos+1 < size){
+                            if(source[pos+1] == '|'){ tokens.push_back(Token{TOKEN_PIPE_PIPE,"||",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                            if(source[pos+1] == '='){ tokens.push_back(Token{TOKEN_PIPE_EQ,"|=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        }
+                        tokens.push_back(Token{TOKEN_PIPE,"|",line,col}); pos++; col++; symbolFound=true; break;
+                    case '^':
+                        if(pos+1 < size && source[pos+1] == '='){ tokens.push_back(Token{TOKEN_CARET_EQ,"^=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        tokens.push_back(Token{TOKEN_CARET,"^",line,col}); pos++; col++; symbolFound=true; break;
+                    case '<':
+                        if(pos+1 < size){
+                            if(source[pos+1] == '<'){
+                                if(pos+2 < size && source[pos+2] == '='){ tokens.push_back(Token{TOKEN_SHIFT_LEFT_EQ,"<<=",line,col}); pos+=3; col+=3; symbolFound=true; break; }
+                                tokens.push_back(Token{TOKEN_SHIFT_LEFT,"<<",line,col}); pos+=2; col+=2; symbolFound=true; break;
+                            }
+                            if(source[pos+1] == '='){ tokens.push_back(Token{TOKEN_LT_EQ,"<=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        }
+                        tokens.push_back(Token{TOKEN_LT,"<",line,col}); pos++; col++; symbolFound=true; break;
+                    case '>':
+                        if(pos+1 < size){
+                            if(source[pos+1] == '>'){
+                                if(pos+2 < size && source[pos+2] == '='){ tokens.push_back(Token{TOKEN_SHIFT_RIGHT_EQ,">>=",line,col}); pos+=3; col+=3; symbolFound=true; break; }
+                                tokens.push_back(Token{TOKEN_SHIFT_RIGHT,">>",line,col}); pos+=2; col+=2; symbolFound=true; break;
+                            }
+                            if(source[pos+1] == '='){ tokens.push_back(Token{TOKEN_GT_EQ,">=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        }
+                        tokens.push_back(Token{TOKEN_GT,">",line,col}); pos++; col++; symbolFound=true; break;
+                    case '=':
+                        if(pos+1 < size && source[pos+1] == '='){ tokens.push_back(Token{TOKEN_EQ_EQ,"==",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        tokens.push_back(Token{TOKEN_ASSIGN,"=",line,col}); pos++; col++; symbolFound=true; break;
+                    case '!':
+                        if(pos+1 < size && source[pos+1] == '='){ tokens.push_back(Token{TOKEN_NOT_EQ,"!=",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        tokens.push_back(Token{TOKEN_EXCLAM,"!",line,col}); pos++; col++; symbolFound=true; break;
+                    case ':':
+                        if(pos+1 < size && source[pos+1] == ':'){ tokens.push_back(Token{TOKEN_SCOPE,"::",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        tokens.push_back(Token{TOKEN_COLON,":",line,col}); pos++; col++; symbolFound=true; break;
+                    case '.':
+                        if(pos+1 < size && source[pos+1] == '.'){ tokens.push_back(Token{TOKEN_DOTDOT,"..",line,col}); pos+=2; col+=2; symbolFound=true; break; }
+                        tokens.push_back(Token{TOKEN_DOT,".",line,col}); pos++; col++; symbolFound=true; break;
+                    case '(': tokens.push_back(Token{TOKEN_LPAREN,"(",line,col}); pos++; col++; symbolFound=true; break;
+                    case ')': tokens.push_back(Token{TOKEN_RPAREN,")",line,col}); pos++; col++; symbolFound=true; break;
+                    case '{': tokens.push_back(Token{TOKEN_LBRACE,"{",line,col}); pos++; col++; symbolFound=true; break;
+                    case '}': tokens.push_back(Token{TOKEN_RBRACE,"}",line,col}); pos++; col++; symbolFound=true; break;
+                    case '[': tokens.push_back(Token{TOKEN_LBRACKET,"[",line,col}); pos++; col++; symbolFound=true; break;
+                    case ']': tokens.push_back(Token{TOKEN_RBRACKET,"]",line,col}); pos++; col++; symbolFound=true; break;
+                    case ',': tokens.push_back(Token{TOKEN_COMMA,",",line,col}); pos++; col++; symbolFound=true; break;
+                    case ';': tokens.push_back(Token{TOKEN_SEMICOLON,";",line,col}); pos++; col++; symbolFound=true; break;
+                    case '~': tokens.push_back(Token{TOKEN_TILDE,"~",line,col}); pos++; col++; symbolFound=true; break;
+                    case '?': tokens.push_back(Token{TOKEN_QUESTIONMARK,"?",line,col}); pos++; col++; symbolFound=true; break;
+                    default: break;
                 }
-            if(valid){
-                valid=false;
-                continue;
+                if(symbolFound) continue;
             }
             if(ch == '\''){
-                if(pos+2 < size&&source[pos+2]=='\''){
-                    strTmp = source[pos+1];
-                    tokens.push_back(Token{TokenKind::TOKEN_CHAR,strTmp,line,col});
-                    pos +=3;
-                    col +=3;
+                if(pos+2 < size && source[pos+2] == '\''){
+                    strTmp.assign(&source[pos+1], 1);
+                    tokens.push_back(Token{TokenKind::TOKEN_CHAR, strTmp, line, col});
+                    pos += 3; col += 3;
                     continue;
                 }
-                if(pos+3 < size&&source[pos+1] == '\\' && source[pos+3]=='\''){
-                    strTmp = source[pos+1];
-                    strTmp += source[pos+2];
-                    tokens.push_back(Token{TokenKind::TOKEN_CHAR,strTmp,line,col});
-                    pos +=4;
-                    col +=4;
+                if(pos+3 < size && source[pos+1] == '\\' && source[pos+3] == '\''){
+                    strTmp.assign(&source[pos+1], 2);
+                    tokens.push_back(Token{TokenKind::TOKEN_CHAR, strTmp, line, col});
+                    pos += 4; col += 4;
                     continue;
                 }
-                tokens.push_back(Token{TokenKind::TOKEN_ERROR,"could not Lex Char",line,col});
-                pos++;
-                col++;
+                tokens.push_back(Token{TokenKind::TOKEN_ERROR, "could not Lex Char", line, col});
+                pos++; col++;
                 continue;
             }
             if(ch == '"'){
-                strTmp = "";
-                auto isEscapedQuote = [&](size_t quotePos) {
-                    int backslashes = 0;
-                    size_t check = quotePos;
-                    while(check > 0 && source[check-1] == '\\'){
-                        backslashes++;
-                        check--;
+                strTmp.clear();
+                pos++; col++;
+                while(pos < size && source[pos] != '"'){
+                    if(source[pos] == '\\' && pos+1 < size){
+                        strTmp += source[pos];
+                        strTmp += source[pos+1];
+                        pos += 2; col += 2;
+                    } else {
+                        if(source[pos] == '\n'){ line++; col = 1; }
+                        strTmp += source[pos];
+                        pos++; col++;
                     }
-                    return (backslashes % 2) != 0;
-                };
-                while(pos+1 < size && (source[pos+1]!='"'||isEscapedQuote(pos+1))){
-                    pos++;
-                    col++;
-                    if(source[pos]=='\n'){
-                        line++;
-                        col=1;
-                    }
-                    strTmp += source[pos];
                 }
-                tokens.push_back(Token{TokenKind::TOKEN_STRING,strTmp,line,col});
-                pos+=2;
-                col+=2;
+                tokens.push_back(Token{TokenKind::TOKEN_STRING, strTmp, line, col});
+                pos++; col++;
                 continue;
             }
-            strTmp = ch;
-            while(pos+1<size&&!(tokenBreakChar.contains(source[pos+1]))){
-                pos++;
-                col++;
-                strTmp += source[pos];
+            strTmp.clear();
+            const char* start = &source[pos];
+            size_t startPos = pos;
+            while(pos < size && !tokenBreakChar.contains(source[pos])){
+                pos++; col++;
             }
-            tokenTempKeyword = tokenMapKeywords.find(strTmp);
+            strTmp.assign(start, pos - startPos);
+            auto tokenTempKeyword = tokenMapKeywords.find(std::string_view(strTmp));
             if(tokenTempKeyword != tokenMapKeywordEnd){
-                tokens.push_back(Token{tokenTempKeyword->second,strTmp,line,col});
-            }else{
-                tokens.push_back(Token{TokenKind::TOKEN_IDENTIFIER,strTmp,line,col});
+                tokens.push_back(Token{tokenTempKeyword->second, strTmp, line, col});
+            } else {
+                tokens.push_back(Token{TokenKind::TOKEN_IDENTIFIER, strTmp, line, col});
             }
-            pos++;
-            col++;
             continue;
         }
+        munmap((void*)source, size);
     }
-    std::atomic<unsigned int> freeID=0;
-    unsigned int getID(){
-        return freeID.fetch_add(1);
-    }
-    void entry(const std::vector<char*> inputfiles,Settings flag,std::vector<TokenFile>& tokens){
+    void entry(const std::vector<char*> inputfiles, Settings flag, std::vector<TokenFile>& tokens){
         if(flag.showStatus)
-            output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"creating ",inputfiles.size()," Threads<LEXER>");
-        unsigned int length = (flag.maxThreads == 0)?static_cast<unsigned int>(inputfiles.size()):(static_cast<unsigned int>(inputfiles.size())>flag.maxThreads)?flag.maxThreads:static_cast<unsigned int>(inputfiles.size());
-        std::vector<std::thread> threads(length);
-        tokens.reserve(inputfiles.size());
-        unsigned int threadCount=0;
-        bool run = true;
-        while(run){
-            for(unsigned int i=0;((i<length)&&threadCount<inputfiles.size());i++){
+            output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"creating ",inputfiles.size()," Tasks<LEXER>");
+        tokens.resize(inputfiles.size());
+        for(unsigned int i = 0; i < static_cast<unsigned int>(inputfiles.size()); i++){
+            tokens[i].filePath = inputfiles[i];
+            pool.enqueue([i, &inputfiles, &tokens, flag]{
                 unsigned int id = getID();
-                threads[i] = std::thread(lexer::threadEntry,inputfiles[threadCount],id,flag,std::ref(tokens[i+threadCount].tokens));
-                tokens[threadCount].filePath = inputfiles[threadCount];
-                threadCount++;
                 if(flag.showStatus)
                     output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"the new Thread<LEXER>[",id,"] was created.");
-            }
-            if(flag.showStatus){
-                output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"all Threads<LEXER> are created.");
-                output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"Waiting for Threads<LEXER> to finish.");
-            }
-            for (auto& t : threads)
-                if(t.joinable()){
-                    t.join();
-                    t = std::thread{};
-                }
-            if(inputfiles.size() <= threadCount)
-                run = false;
+                threadEntry(inputfiles[i], id, flag, tokens[i].tokens);
+            });
         }
+        pool.waitAll();
         if(flag.showStatus)
             output::println(output::UseColor(output::FG_GREEN),"REPORT<MAIN>: ",output::UseColor(output::FG_DEFAULT),"all Threads<LEXER> are finished.");
     }
