@@ -1,0 +1,164 @@
+mem<32> factorial(mem<32> n){
+	if (n <= 1) {
+		return 1;
+	}
+	return n * factorial(n - 1);
+}
+
+mem<32> fibRec(mem<32> n){
+	if (n <= 1) {
+		return n;
+	}
+	return fibRec(n - 1) + fibRec(n - 2);
+}
+
+mem<32> fibIter(mem<32> n){
+	if (n == 0) { return 0; }
+	if (n == 1) { return 1; }
+
+	mem<32> a = 0;
+	mem<32> b = 1;
+	mem<32> c = 0;
+
+	for (mem<32> i = 2; i <= n; i++) {
+		c = a + b;
+		a = b;
+		b = c;
+	}
+	return b;
+}
+
+mem<32> gcd(mem<32> a, mem<32> b){
+	while (b != 0) {
+		mem<32> t = b;
+		b = a % b;
+		a = t;
+	}
+	return a;
+}
+
+mem<32> power(mem<32> base, mem<32> exp){
+	mem<32> result = 1;
+	while (exp > 0) {
+		if (exp & 1) {
+			result = result * base;
+		}
+		base = base * base;
+		exp = exp >> 1;
+	}
+	return result;
+}
+
+mem<> swap(mem<32>* a, mem<32>* b){
+	mem<32> tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+mem<32> partition(mem<32>[..] arr, mem<32> low, mem<32> high){
+	mem<32> pivot = arr[high];
+	mem<32> i = low;
+
+	for (mem<32> j = low; j < high; j++) {
+		if (arr[j] <= pivot) {
+			swap(&arr[i], &arr[j]);
+			i = i + 1;
+		}
+	}
+	swap(&arr[i], &arr[high]);
+	return i;
+}
+
+mem<> quickSort(mem<32>[..] arr, mem<32> low, mem<32> high){
+	if (low < high) {
+		mem<32> pi = partition(arr, low, high);
+		if (pi > 0) {
+			quickSort(arr, low, pi - 1);
+		}
+		quickSort(arr, pi + 1, high);
+	}
+}
+
+mem<> bubbleSort(mem<32>[..] arr, mem<32> n){
+	for (mem<32> i = 0; i < n - 1; i++) {
+		mem<32> swapped = 0;
+		for (mem<32> j = 0; j < n - i - 1; j++) {
+			if (arr[j] > arr[j + 1]) {
+				swap(&arr[j], &arr[j + 1]);
+				swapped = 1;
+			}
+		}
+		if (swapped == 0) {
+			break;
+		}
+	}
+}
+
+mem<32> binarySearch(mem<32>[..] arr, mem<32> n, mem<32> target){
+	mem<32> left = 0;
+	mem<32> right = n;
+	err = 0;
+
+	while (left < right) {
+		mem<32> mid = left + (right - left) / 2;
+		if (arr[mid] == target) {
+			return mid;
+		}
+		if (arr[mid] < target) {
+			left = mid + 1;
+		} else {
+			right = mid;
+		}
+	}
+	err = 1;
+	return 0;
+}
+
+mem<> reverseBytes(mem<8>[..] arr, mem<32> n){
+	mem<32> i = 0;
+	mem<32> j = n - 1;
+	while (i < j) {
+		mem<8> tmp = arr[i];
+		arr[i] = arr[j];
+		arr[j] = tmp;
+		i = i + 1;
+		j = j - 1;
+	}
+}
+
+mem<32> sumArray(mem<32>[..] arr, mem<32> n){
+	mem<32> total = 0;
+	for (mem<32> i = 0; i < n; i++) {
+		total = total + arr[i];
+	}
+	return total;
+}
+
+mem<> main(){
+	mem<32> f5 = factorial(5);          // 120
+	mem<32> fib8 = fibRec(8);           // 21
+	mem<32> fib20 = fibIter(20);        // 6765
+
+	mem<32> g = gcd(48, 18);            // 6
+	mem<32> p = power(2, 10);           // 1024
+
+	mem<32>[..10] arr1 = [42, 17, 89, 3, 66, 23, 91, 8, 55, 12];
+	quickSort(arr1, 0, 9);              // sorts in-place
+
+	mem<32>[..8] arr2 = [99, 44, 22, 77, 11, 88, 55, 33];
+	bubbleSort(arr2, 8);
+
+	mem<32> idx = binarySearch(arr1, 10, 55);
+	if (err != 0) {
+		// not found — unreachable here
+	}
+	mem<32> idx2 = binarySearch(arr2, 8, 100);  // should set err = 1
+
+	mem<8>[..5] hello = ['H', 'e', 'l', 'l', 'o'];
+	reverseBytes(hello, 5);            // now 'o','l','l','e','H'
+
+	mem<32> s1 = sumArray(arr1, 10);
+	mem<32> s2 = sumArray(arr2, 8);
+
+	while (1) {}
+}

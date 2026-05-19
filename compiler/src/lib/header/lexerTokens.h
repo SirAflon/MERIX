@@ -55,46 +55,45 @@ typedef enum {
         TOKEN_EXCLAM,
         TOKEN_SCOPE,
 
-        TOKEN_INTEGER,
-        TOKEN_FLOAT,
-        TOKEN_CHAR,
-        TOKEN_STRING,
-        TOKEN_ERROR,
-        TOKEN_UNKNOWN,
+        TOKEN_INTEGER,//
+        TOKEN_FLOAT,//
+        TOKEN_CHAR,//
+        TOKEN_STRING,//
+        TOKEN_ERROR,//
+        TOKEN_UNKNOWN,//
 
         TOKEN_IDENTIFIER,
-        TOKEN_COMMENT,
+        TOKEN_COMMENT,//
 
         TOKEN_KEYWORD_MEM,
+        TOKEN_KEYWORD_REG,
+        TOKEN_KEYWORD_VREG,
         TOKEN_KEYWORD_STRUCT,
-        TOKEN_KEYWORD_SIGNED,
-        TOKEN_KEYWORD_UNSIGNED,
-        TOKEN_KEYWORD_CONST,
-        TOKEN_KEYWORD_PUBLIC,
-        TOKEN_KEYWORD_PRIVATE,
-        TOKEN_KEYWORD_INCLUDE,
+        TOKEN_KEYWORD_PUBLIC,//
+        TOKEN_KEYWORD_PRIVATE,//
+        TOKEN_KEYWORD_INCLUDE,//
         TOKEN_KEYWORD_TYP,
         TOKEN_KEYWORD_VAL,
         TOKEN_KEYWORD_OVERRIDE,
-        TOKEN_KEYWORD_DEFINE,
-        TOKEN_KEYWORD_MACRO,
-        TOKEN_KEYWORD_OPERATION,
-        TOKEN_KEYWORD_TRY,
-        TOKEN_KEYWORD_CATCH,
-        TOKEN_KEYWORD_THROW,
-        TOKEN_KEYWORD_FINALLY,
+        TOKEN_KEYWORD_DEFINE,//
+        TOKEN_KEYWORD_MACRO,//
+        TOKEN_KEYWORD_OPERATION,//
+        TOKEN_KEYWORD_TRY,//
+        TOKEN_KEYWORD_CATCH,//
+        TOKEN_KEYWORD_THROW,//
+        TOKEN_KEYWORD_FINALLY,//
         TOKEN_KEYWORD_IF,
-        TOKEN_KEYWORD_ELSE,
+        TOKEN_KEYWORD_ELSE,//
         TOKEN_KEYWORD_FOR,
         TOKEN_KEYWORD_WHILE,
         TOKEN_KEYWORD_DO,
         TOKEN_KEYWORD_SWITCH,
-        TOKEN_KEYWORD_CASE,
-        TOKEN_KEYWORD_DEFAULT,
+        TOKEN_KEYWORD_CASE,//
+        TOKEN_KEYWORD_DEFAULT,//
         TOKEN_KEYWORD_BREAK,
         TOKEN_KEYWORD_RETURN,
         TOKEN_KEYWORD_CONTINUE,
-        TOKEN_KEYWORD_ERR,
+        TOKEN_KEYWORD_ERR,//
         TOKEN_KEYWORD_META,
 }TokenKind;
 
@@ -153,10 +152,9 @@ static const std::unordered_map<std::string_view, TokenKind> tokenMapSymbols = {
 
 static const std::unordered_map<std::string_view, TokenKind> tokenMapKeywords{
     {"mem", TOKEN_KEYWORD_MEM},
+    {"reg", TOKEN_KEYWORD_REG},
+    {"vreg", TOKEN_KEYWORD_VREG},
     {"struct", TOKEN_KEYWORD_STRUCT},
-    {"signed", TOKEN_KEYWORD_SIGNED},
-    {"unsigned", TOKEN_KEYWORD_UNSIGNED},
-    {"const", TOKEN_KEYWORD_CONST},
     {"public", TOKEN_KEYWORD_PUBLIC},
     {"private", TOKEN_KEYWORD_PRIVATE},
     {"include", TOKEN_KEYWORD_INCLUDE},
