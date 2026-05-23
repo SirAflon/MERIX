@@ -1,16 +1,16 @@
 mem<32> factorial(mem<32> n){
 	if (n <= 1) {
 		return 1;
-	}
+	};
 	return n * factorial(n - 1);
-}
+};
 
 mem<32> fibRec(mem<32> n){
 	if (n <= 1) {
 		return n;
-	}
+	};
 	return fibRec(n - 1) + fibRec(n - 2);
-}
+};
 
 mem<32> fibIter(mem<32> n){
 	if (n == 0) { return 0; }
@@ -103,16 +103,16 @@ mem<32> binarySearch(mem<32>[..] arr, mem<32> n, mem<32> target){
 		mem<32> mid = left + (right - left) / 2;
 		if (arr[mid] == target) {
 			return mid;
-		}
+		};
 		if (arr[mid] < target) {
 			left = mid + 1;
 		} else {
 			right = mid;
-		}
-	}
+		};
+	};
 	err = 1;
 	return 0;
-}
+};
 
 mem<> reverseBytes(mem<8>[..] arr, mem<32> n){
 	mem<32> i = 0;
@@ -123,8 +123,8 @@ mem<> reverseBytes(mem<8>[..] arr, mem<32> n){
 		arr[j] = tmp;
 		i = i + 1;
 		j = j - 1;
-	}
-}
+	};
+};
 
 mem<32> sumArray(mem<32>[..] arr, mem<32> n){
 	mem<32> total = 0;

@@ -26,6 +26,8 @@ enum class NodeKind {
     PointerType,
     ReferenceType,
     RegPinnedType,
+    VRegType,
+    VRegRefExpr,
 
     // Declarations
     VariableDecl,
@@ -120,15 +122,22 @@ struct RegPinnedType : Node {
     std::string register_name;
     RegPinnedType() : Node(NodeKind::RegPinnedType) {}
 };
-
+struct VRegType : Node {
+    std::vector<std::unique_ptr<Node>> parameters;
+    VRegType() : Node(NodeKind::VRegType) {}
+};
+struct VRegRefExpr : Node {
+    std::string variable_name;
+    VRegRefExpr() : Node(NodeKind::VRegRefExpr) {}
+};
 struct StructType : Node {
-    std::string struct_name;
+    std::vector<std::string> struct_name;
     StructType() : Node(NodeKind::StructType) {}
 };
 
 struct ArrayType : Node {
     std::unique_ptr<Node> element_type;
-    std::unique_ptr<Node> size; // RangeExpr (e.g., [..N])
+    uint64_t size; // RangeExpr (e.g., [..N])
     ArrayType() : Node(NodeKind::ArrayType) {}
 };
 
@@ -481,6 +490,8 @@ public:
     virtual void visit(const CompileTimeFunctionDecl&) {}
     virtual void visit(const MetaIfStmt&) {}
     virtual void visit(const MetaForStmt&) {}
+    virtual void visit(const VRegType&) {}
+    virtual void visit(const VRegRefExpr&) {}
 };
 
 } // namespace merix

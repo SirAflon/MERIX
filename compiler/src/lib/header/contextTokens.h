@@ -162,3 +162,11 @@
         // Hypervisor extension (H)
         "hstatus", "hedeleg", "hideleg", "hgeip", "htimedelta", "hgatp"
     };
+    enum class TokenLists{
+        TOKEN_TYPE,
+        TOKEN_IDENTIFIER,
+        TOKEN_ASSIGN,
+        TOKEN_SCOPE,
+        TOKEN_RUNTIME,
+        TOKEN_INDEXES
+    };

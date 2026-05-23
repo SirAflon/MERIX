@@ -78,10 +78,6 @@ typedef enum {
         TOKEN_KEYWORD_DEFINE,//
         TOKEN_KEYWORD_MACRO,//
         TOKEN_KEYWORD_OPERATION,//
-        TOKEN_KEYWORD_TRY,//
-        TOKEN_KEYWORD_CATCH,//
-        TOKEN_KEYWORD_THROW,//
-        TOKEN_KEYWORD_FINALLY,//
         TOKEN_KEYWORD_IF,
         TOKEN_KEYWORD_ELSE,//
         TOKEN_KEYWORD_FOR,
@@ -93,7 +89,6 @@ typedef enum {
         TOKEN_KEYWORD_BREAK,
         TOKEN_KEYWORD_RETURN,
         TOKEN_KEYWORD_CONTINUE,
-        TOKEN_KEYWORD_ERR,//
         TOKEN_KEYWORD_META,
 }TokenKind;
 
@@ -164,10 +159,6 @@ static const std::unordered_map<std::string_view, TokenKind> tokenMapKeywords{
     {"define", TOKEN_KEYWORD_DEFINE},
     {"macro", TOKEN_KEYWORD_MACRO},
     {"operation", TOKEN_KEYWORD_OPERATION},
-    {"try", TOKEN_KEYWORD_TRY},
-    {"catch", TOKEN_KEYWORD_CATCH},
-    {"throw", TOKEN_KEYWORD_THROW},
-    {"finally", TOKEN_KEYWORD_FINALLY},
     {"if", TOKEN_KEYWORD_IF},
     {"else", TOKEN_KEYWORD_ELSE},
     {"for", TOKEN_KEYWORD_FOR},
@@ -179,7 +170,6 @@ static const std::unordered_map<std::string_view, TokenKind> tokenMapKeywords{
     {"break", TOKEN_KEYWORD_BREAK},
     {"return", TOKEN_KEYWORD_RETURN},
     {"continue", TOKEN_KEYWORD_CONTINUE},
-    {"err", TOKEN_KEYWORD_ERR},
     {"meta", TOKEN_KEYWORD_META},
 };
 
