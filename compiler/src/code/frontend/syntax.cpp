@@ -140,7 +140,7 @@ namespace syntax {
         return node;
     }
     std::unique_ptr<Node> createLit(const lexer::Token& para){
-
+        if(){}
     }
     std::unique_ptr<Node> createNewArray(const metaArray& info){
         auto node = std::make_unique<InitializerListExpr>();
