@@ -32,7 +32,6 @@ namespace syntax {
     unsigned int getID(){
         return freeID.fetch_add(1);
     }
-    void ParseString(const lexer::Token& token);
     void ParseIndexBracked(const std::vector<lexer::Token>& tokens,size_t& pos);
     void ParseIdentefier(const std::vector<lexer::Token>& tokens,size_t& pos);
     void ParseRuntime(const std::vector<lexer::Token>& tokens,size_t& pos);
@@ -140,12 +139,22 @@ namespace syntax {
         return node;
     }
     std::unique_ptr<Node> createLit(const lexer::Token& para){
-        if(){}
+        using TK = TokenKind;
+        switch(para.kind){
+            case TK::TOKEN_INTEGER:
+                return createInt(para.lexeme);
+            case TK::TOKEN_FLOAT:
+                return createFloat(para.lexeme);
+            case TK::TOKEN_CHAR:
+                return createChar(*para.lexeme.c_str());
+            case TK::TOKEN_STRING:
+                return createString(para);
+        }
     }
     std::unique_ptr<Node> createNewArray(const metaArray& info){
         auto node = std::make_unique<InitializerListExpr>();
         for(size_t i=0;i<info.para.size();i++)
-            node ->elements = createLit(info.para[i]);
+            node ->elements.push_back(createLit(info.para[i]));
         return node;
     }
     std::unique_ptr<Node> createArray(const metaArray& info){
@@ -166,11 +175,9 @@ namespace syntax {
                 case TK::TOKEN_INTEGER:
                 case TK::TOKEN_FLOAT:
                 case TK::TOKEN_CHAR:
+                case TK::TOKEN_STRING:
                     in.push_back(tokens[pos]);
                     pos++;
-                    break;
-                case TK::TOKEN_STRING:
-                    ParseString(tokens[pos]);
                     break;
                 case TK::TOKEN_LBRACKET:
                     ParseIndexBracked(tokens,pos);
@@ -345,8 +352,6 @@ namespace syntax {
                 case TK::TOKEN_CHAR:
                     break;
                 case TK::TOKEN_STRING:
-                    ParseString(tokens[pos]);
-                    pos++;
                     break;
                 case TK::TOKEN_EQ_EQ:
                     break;

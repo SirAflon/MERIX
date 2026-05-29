@@ -14,7 +14,7 @@ namespace syntax {
 // -----------------------------------------------------------------------------
 // Node kinds
 // -----------------------------------------------------------------------------
-enum class NodeKind {
+enum class NodeKind : uint8_t {
     // Translation unit
     TranslationUnit,
     IncludeDecl,
@@ -50,9 +50,6 @@ enum class NodeKind {
     BreakStmt,
     ContinueStmt,
     ReturnStmt,
-    TryStmt,
-    CatchClause,
-    ThrowStmt,
     ErrStmt,
 
     // Expressions
@@ -278,25 +275,6 @@ struct ReturnStmt : Node {
     ReturnStmt() : Node(NodeKind::ReturnStmt) {}
 };
 
-struct TryStmt : Node {
-    std::unique_ptr<Node> try_block;                   // BlockStmt
-    std::vector<std::unique_ptr<Node>> catches;        // CatchClause nodes
-    std::unique_ptr<Node> finally_block;               // optional BlockStmt
-    TryStmt() : Node(NodeKind::TryStmt) {}
-};
-
-struct CatchClause : Node {
-    std::unique_ptr<Node> exception_type; // Type node
-    std::string param_name;               // name of the caught variable (optional)
-    std::unique_ptr<Node> handler_block;  // BlockStmt
-    CatchClause() : Node(NodeKind::CatchClause) {}
-};
-
-struct ThrowStmt : Node {
-    std::unique_ptr<Node> exception;
-    ThrowStmt() : Node(NodeKind::ThrowStmt) {}
-};
-
 struct ErrStmt : Node {
     std::unique_ptr<Node> expression; // RHS of err = ...
     ErrStmt() : Node(NodeKind::ErrStmt) {}
@@ -465,9 +443,6 @@ public:
     virtual void visit(const BreakStmt&) {}
     virtual void visit(const ContinueStmt&) {}
     virtual void visit(const ReturnStmt&) {}
-    virtual void visit(const TryStmt&) {}
-    virtual void visit(const CatchClause&) {}
-    virtual void visit(const ThrowStmt&) {}
     virtual void visit(const ErrStmt&) {}
     virtual void visit(const IntegerLiteral&) {}
     virtual void visit(const FloatLiteral&) {}
