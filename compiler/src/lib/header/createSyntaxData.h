@@ -27,4 +27,15 @@ struct metaDataType{
         bool isCall=true;
         bool isRange=false;
     };
+    enum class regType : uint8_t{
+        REG,
+        VREG
+    };
+    struct metaMove{
+        std::string one;
+        std::string two;
+        regType ofOne;
+        regType ofTwo;
+        bool isLeft = false;
+    };
 }

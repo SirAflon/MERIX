@@ -11,11 +11,9 @@ namespace syntax {
         return freeID.fetch_add(1);
     }
     void ParseREG(const std::vector<lexer::Token>& tokens,size_t& pos);
-    void ParseMEM(const std::vector<lexer::Token>& tokens,size_t& pos);
-    void ParseVREG(const std::vector<lexer::Token>& tokens,size_t& pos);
     void ParseScope(const std::vector<lexer::Token>& tokens,size_t& pos);
     
-    void ParseREG(const std::vector<lexer::Token>& tokens,size_t& pos){
+    std::string ParseHelperREG(const std::vector<lexer::Token>& tokens,size_t& pos){
         using TK = TokenKind;
         bool con=true;
         bool regValid=false;
@@ -36,25 +34,10 @@ namespace syntax {
             }
         }
     }
-    void ParseMEM(const std::vector<lexer::Token>& tokens,size_t& pos){
+    std::string ParseHelperCallVREG(const std::vector<lexer::Token>& tokens,size_t& pos){
         using TK = TokenKind;
         bool con=true;
-        std::vector<Node*> nodes;
-        std::vector<TokenLists> list;
-        while(pos < tokens.size()&&con){
-            switch(tokens[pos].kind){
-                default:
-                    pos++;
-            }
-        }
-    }
-    void ParseVREG(const std::vector<lexer::Token>& tokens,size_t& pos){
-        using TK = TokenKind;
-        bool con=true;
-        std::string structName;
-        std::vector<std::string> num;
-        bool isRef=false;
-        bool isPointer=false;
+        std::string iden;
         while(pos < tokens.size()&&con){
             switch(tokens[pos].kind){
                 case TK::TOKEN_GT:
@@ -63,84 +46,57 @@ namespace syntax {
                 case TK::TOKEN_LT:
                     break;
                 case TK::TOKEN_IDENTIFIER:
-                    if(structName.empty())
-                        structName = tokens[pos].lexeme;
+                    iden = tokens[pos].lexeme;
                     pos++;
                     break;
-                case TK::TOKEN_INTEGER:
-                    num.push_back(tokens[pos].lexeme);
+                default:
+                    pos++;
+            }
+        }
+        return iden;
+    }
+    void ParseREG(const std::vector<lexer::Token>& tokens,size_t& pos){
+        using TK = TokenKind;
+        bool con=true;
+        metaMove me;
+        while(con&&pos<tokens.size()){
+            switch(tokens[pos].kind){
+                case TK::TOKEN_ARROW_RIGHT:
                     pos++;
                     break;
-                case TK::TOKEN_KEYWORD_MEM:
+                case TK::TOKEN_ARROW_LEFT:
+                    me.isLeft = true;
                     pos++;
-                    ParseMEM(tokens,pos);
                     break;
                 case TK::TOKEN_KEYWORD_REG:
                     pos++;
-                    ParseREG(tokens,pos);
-                case TK::TOKEN_STAR:
+                    if(me.one.empty()){
+                        me.one = ParseHelperREG(tokens,pos);
+                        me.ofOne = regType::REG;
+                    }else if(me.two.empty()){
+                        me.two = ParseHelperREG(tokens,pos);
+                        me.ofTwo = regType::REG;
+                    }
+                    break;
+                case TK::TOKEN_KEYWORD_VREG:
                     pos++;
-                    isPointer=true;
+                    if(me.one.empty()){
+                        me.one = ParseHelperCallVREG(tokens,pos);
+                        me.ofOne = regType::VREG;
+                    }else if(me.two.empty()){
+                        me.two = ParseHelperCallVREG(tokens,pos);
+                        me.ofTwo = regType::VREG;
+                    }
                     break;
-                case TK::TOKEN_AMP:
+                case TK::TOKEN_SEMICOLON:
                     pos++;
-                    isRef=true;
-                    break;
-                case TK::TOKEN_COMMA:
-                    pos++;
-                    break;
-                default:
-                    pos++;
-            }
-        }
-    }
-    void ParseRuntime(const std::vector<lexer::Token>& tokens,size_t& pos){
-        using TK = TokenKind;
-        bool con = true;
-        while(pos < tokens.size()&&con){
-            switch(tokens[pos].kind){
-                case TK::TOKEN_IDENTIFIER:
-                    break;
-                case TK::TOKEN_CHAR:
-                    break;
-                case TK::TOKEN_STRING:
-                    break;
-                case TK::TOKEN_EQ_EQ:
-                    break;
-                case TK::TOKEN_NOT_EQ:
-                    break;
-                case TK::TOKEN_LT_EQ:
-                    break;
-                case TK::TOKEN_GT_EQ:
-                    break;
-                case TK::TOKEN_AND_AND:
-                    break;
-                case TK::TOKEN_PIPE_PIPE:
-                    break;
-                case TK::TOKEN_PLUS:
-                    break;
-                case TK::TOKEN_MINUS:
-                    break;
-                case TK::TOKEN_STAR:
-                    break;
-                case TK::TOKEN_SLASH:
-                    break;
-                case TK::TOKEN_PERCENT:
-                    break;
-                case TK::TOKEN_EXCLAM:
-                    break;
-                case TK::TOKEN_COMMA:
-                    pos++;
-                    break;
-                case TK::TOKEN_RPAREN:
                     con=false;
-                    pos++;
                     break;
                 default:
-                    pos++;
+                    break;
             }
         }
-    }
+    } 
     void ParseScope(const std::vector<lexer::Token>& tokens,size_t& pos){
         using TK = TokenKind;
         bool con=true;
@@ -148,7 +104,6 @@ namespace syntax {
             switch(tokens[pos].kind){
                 case TK::TOKEN_KEYWORD_MEM:
                     pos++;
-                    ParseMEM(tokens,pos);
                     break;
                 case TK::TOKEN_KEYWORD_REG:
                     pos++;
@@ -156,7 +111,6 @@ namespace syntax {
                     break;
                 case TK::TOKEN_KEYWORD_VREG:
                     pos++;
-                    ParseVREG(tokens,pos);
                     break;
                 case TK::TOKEN_KEYWORD_STRUCT:
                     break;
